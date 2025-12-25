@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食事セット - 栄養管理アプリ</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .meal-set-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .meal-set-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .meal-set-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .meal-set-type {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        .meal-set-foods {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .meal-set-food-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .meal-set-food-item:last-child {
+            border-bottom: none;
+        }
+        .meal-set-totals {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .meal-set-totals span {
+            background: #f5f5f5;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        .meal-set-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .food-selector {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        .selected-foods {
+            margin-top: 10px;
+        }
+        .selected-food-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        .selected-food-item .remove-btn {
+            color: #d32f2f;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>栄養管理アプリ</h1>
+            <nav>
+                <a href="/">ホーム</a>
+                <a href="/dashboard">ダッシュボード</a>
+                <a href="/records">記録</a>
+                <a href="/foods">食品マスタ</a>
+                <a href="/meal-sets" class="active">食事セット</a>
+                <a href="/settings">設定</a>
+                <a href="#" onclick="logout(); return false;" class="logout-link">ログアウト</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="page-header">
+                <h2>食事セット</h2>
+                <p>よく食べる食事の組み合わせを登録して、簡単に記録できます</p>
+            </section>
+
+            <!-- フィルター -->
+            <section class="filter-section">
+                <form method="get" action="/meal-sets" class="filter-form">
+                    <select name="mealType" onchange="this.form.submit()">
+                        <option value="">全て</option>
+                        <option value="breakfast" th:selected="${selectedMealType == 'breakfast'}">朝食</option>
+                        <option value="lunch" th:selected="${selectedMealType == 'lunch'}">昼食</option>
+                        <option value="dinner" th:selected="${selectedMealType == 'dinner'}">夕食</option>
+                        <option value="snack" th:selected="${selectedMealType == 'snack'}">間食</option>
+                    </select>
+                    <input type="text" name="keyword" th:value="${keyword}" placeholder="セット名で検索...">
+                    <button type="submit" class="btn btn-secondary">検索</button>
+                </form>
+            </section>
+
+            <!-- 食事セット追加フォーム -->
+            <section class="add-food-section">
+                <h3>新しい食事セットを作成</h3>
+                <form th:action="@{/meal-sets}" method="post" id="mealSetForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="setName">セット名 *</label>
+                            <input type="text" name="setName" id="setName" required placeholder="例: 朝の定番メニュー">
+                        </div>
+                        <div class="form-group">
+                            <label for="mealType">食事タイプ</label>
+                            <select name="mealType" id="mealType">
+                                <option value="">選択してください</option>
+                                <option value="breakfast">朝食</option>
+                                <option value="lunch">昼食</option>
+                                <option value="dinner">夕食</option>
+                                <option value="snack">間食</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">説明（任意）</label>
+                        <input type="text" name="description" id="description" placeholder="セットの説明">
+                    </div>
+
+                    <!-- 食品選択 -->
+                    <div class="food-selector">
+                        <label>食品を追加:</label>
+                        <select id="foodSelect">
+                            <option value="">食品を選択...</option>
+                            <option th:each="food : ${foods}"
+                                    th:value="${food.foodId}"
+                                    th:data-name="${food.foodName}"
+                                    th:data-grams="${food.portionGrams}"
+                                    th:data-calories="${food.calories}"
+                                    th:data-protein="${food.protein}"
+                                    th:data-fat="${food.fat}"
+                                    th:data-carbs="${food.carbohydrates}"
+                                    th:text="${food.foodName + ' (' + food.portionGrams + 'g)'}">
+                            </option>
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="addFoodToSet()">追加</button>
+                    </div>
+
+                    <div class="selected-foods" id="selectedFoods">
+                        <!-- 選択された食品がここに表示される -->
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">セットを保存</button>
+                </form>
+            </section>
+
+            <!-- 食事セット一覧 -->
+            <section class="foods-list">
+                <h3>保存済みセット (<span th:text="${mealSets.size()}">0</span>件)</h3>
+
+                <div th:if="${!mealSets.isEmpty()}">
+                    <div th:each="set : ${mealSets}" class="meal-set-card">
+                        <div class="meal-set-header">
+                            <span class="meal-set-name" th:text="${set.setName}">セット名</span>
+                            <span class="meal-set-type" th:if="${set.mealType}"
+                                  th:text="${set.mealType == 'breakfast' ? '朝食' : (set.mealType == 'lunch' ? '昼食' : (set.mealType == 'dinner' ? '夕食' : '間食'))}">
+                            </span>
+                        </div>
+
+                        <p th:if="${set.description}" th:text="${set.description}" style="color: #666; font-size: 0.9em;"></p>
+
+                        <div class="meal-set-foods" th:if="${!set.foods.isEmpty()}">
+                            <div th:each="food : ${set.foods}" class="meal-set-food-item">
+                                <span th:text="${food.foodName}">食品名</span>
+                                <span th:text="${food.grams + 'g / ' + food.calories + 'kcal'}">詳細</span>
+                            </div>
+                        </div>
+
+                        <div class="meal-set-totals">
+                            <span th:text="'合計: ' + ${set.totalCalories} + ' kcal'">カロリー</span>
+                            <span th:text="'P: ' + ${set.totalProtein} + 'g'">タンパク質</span>
+                            <span th:text="'F: ' + ${set.totalFat} + 'g'">脂質</span>
+                            <span th:text="'C: ' + ${set.totalCarbs} + 'g'">炭水化物</span>
+                            <span style="color: #666;" th:text="'使用回数: ' + ${set.usageCount}">使用回数</span>
+                        </div>
+
+                        <div class="meal-set-actions">
+                            <form th:action="@{/meal-sets/{id}/use(id=${set.setId})}" method="post" style="display: inline;">
+                                <input type="hidden" name="date" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                                <button type="submit" class="btn btn-primary btn-sm">今日の記録に使用</button>
+                            </form>
+                            <form th:action="@{/meal-sets/{id}/delete(id=${set.setId})}" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('このセットを削除しますか？')">削除</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <p th:if="${mealSets.isEmpty()}" class="empty">
+                    食事セットがありません。よく食べる組み合わせを登録しておくと便利です。
+                </p>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 栄養管理アプリ</p>
+        </footer>
+    </div>
+
+    <script>
+        // XSS対策: HTMLエスケープ関数
+        function escapeHtml(str) {
+            if (str == null) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function addFoodToSet() {
+            const select = document.getElementById('foodSelect');
+            const selectedOption = select.options[select.selectedIndex];
+
+            if (!selectedOption.value) return;
+
+            const foodId = selectedOption.value;
+            const foodName = selectedOption.dataset.name;
+            const grams = selectedOption.dataset.grams;
+            const calories = selectedOption.dataset.calories;
+            const protein = selectedOption.dataset.protein;
+            const fat = selectedOption.dataset.fat;
+            const carbs = selectedOption.dataset.carbs;
+
+            const container = document.getElementById('selectedFoods');
+            const div = document.createElement('div');
+            div.className = 'selected-food-item';
+
+            // XSS対策: テキストノードとして追加
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = foodName + ' (' + grams + 'g)';
+
+            const calSpan = document.createElement('span');
+            calSpan.textContent = calories + 'kcal';
+
+            const removeBtn = document.createElement('span');
+            removeBtn.className = 'remove-btn';
+            removeBtn.textContent = '×';
+            removeBtn.onclick = function() { this.parentElement.remove(); };
+
+            // hidden inputs
+            const inputs = [
+                {name: 'foodIds', value: foodId},
+                {name: 'foodNames', value: foodName},
+                {name: 'gramsList', value: grams},
+                {name: 'caloriesList', value: calories},
+                {name: 'proteinList', value: protein},
+                {name: 'fatList', value: fat},
+                {name: 'carbsList', value: carbs}
+            ];
+
+            div.appendChild(nameSpan);
+            div.appendChild(calSpan);
+            inputs.forEach(function(input) {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = input.name;
+                hidden.value = input.value;
+                div.appendChild(hidden);
+            });
+            div.appendChild(removeBtn);
+
+            container.appendChild(div);
+            select.selectedIndex = 0;
+        }
+
+        async function logout() {
+            if (!confirm('ログアウトしますか？')) return;
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    alert('ログアウトに失敗しました');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('ログアウトに失敗しました');
+            }
+        }
+    </script>
+</body>
+</html>

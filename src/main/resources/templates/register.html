@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規登録 - 栄養管理アプリ</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .auth-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .auth-form .form-group {
+            margin-bottom: 20px;
+        }
+        .auth-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .auth-form input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .auth-form input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .auth-btn:hover {
+            background: #45a049;
+        }
+        .auth-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .auth-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .auth-links a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+        }
+        .password-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h1 class="auth-title">アカウント作成</h1>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="registerForm" class="auth-form" onsubmit="return handleRegister(event)">
+            <div class="form-group">
+                <label for="name">表示名</label>
+                <input type="text" id="name" name="name" placeholder="ニックネーム">
+            </div>
+
+            <div class="form-group">
+                <label for="email">メールアドレス</label>
+                <input type="email" id="email" name="email" required placeholder="example@mail.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" required placeholder="6文字以上" minlength="6">
+                <p class="password-hint">6文字以上で入力してください</p>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">パスワード（確認）</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="パスワードを再入力">
+            </div>
+
+            <div class="loading" id="loading">登録中...</div>
+
+            <button type="submit" class="auth-btn" id="registerBtn">登録</button>
+        </form>
+
+        <div class="auth-links">
+            <p>すでにアカウントをお持ちですか？ <a th:href="@{/login}">ログイン</a></p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script th:src="@{/js/firebase-config.js}"></script>
+
+    <script>
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function setLoading(loading) {
+            document.getElementById('loading').style.display = loading ? 'block' : 'none';
+            document.getElementById('registerBtn').disabled = loading;
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // パスワード確認
+            if (password !== confirmPassword) {
+                showError('パスワードが一致しません');
+                return false;
+            }
+
+            if (password.length < 6) {
+                showError('パスワードは6文字以上で入力してください');
+                return false;
+            }
+
+            setLoading(true);
+            document.getElementById('errorMessage').style.display = 'none';
+
+            try {
+                // Firebaseでユーザー作成
+                const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+
+                // 表示名を設定
+                if (name) {
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                }
+
+                // IDトークンを取得
+                const idToken = await userCredential.user.getIdToken();
+
+                // サーバーにトークンを送信
+                const response = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ idToken: idToken })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('登録完了！リダイレクト中...');
+                    window.location.href = '/';
+                } else {
+                    showError(result.error || '登録に失敗しました');
+                }
+            } catch (error) {
+                console.error('Register error:', error);
+                let message = '登録に失敗しました';
+                if (error.code === 'auth/email-already-in-use') {
+                    message = 'このメールアドレスは既に使用されています';
+                } else if (error.code === 'auth/invalid-email') {
+                    message = 'メールアドレスの形式が正しくありません';
+                } else if (error.code === 'auth/weak-password') {
+                    message = 'パスワードが弱すぎます';
+                }
+                showError(message);
+            } finally {
+                setLoading(false);
+            }
+
+            return false;
+        }
+    </script>
+</body>
+</html>

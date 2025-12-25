@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食品マスタ - 栄養管理アプリ</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>栄養管理アプリ</h1>
+            <nav>
+                <a href="/">ホーム</a>
+                <a href="/dashboard">ダッシュボード</a>
+                <a href="/records">記録</a>
+                <a href="/foods" class="active">食品マスタ</a>
+                <a href="/meal-sets">食事セット</a>
+                <a href="/settings">設定</a>
+                <a href="#" onclick="logout(); return false;" class="logout-link">ログアウト</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="page-header">
+                <h2>食品マスタ</h2>
+            </section>
+
+            <!-- 食品追加フォーム -->
+            <section class="add-food-section">
+                <h3>食品を追加</h3>
+                <form th:action="@{/foods}" method="post" class="food-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="foodName">食品名</label>
+                            <input type="text" name="foodName" id="foodName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mealType">食事タイプ</label>
+                            <select name="mealType" id="mealType">
+                                <option value="breakfast">朝食</option>
+                                <option value="lunch">昼食</option>
+                                <option value="dinner">夕食</option>
+                                <option value="snack">間食</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="portionGrams">標準グラム数</label>
+                            <input type="number" name="portionGrams" id="portionGrams" step="0.1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="calories">カロリー (kcal)</label>
+                            <input type="number" name="calories" id="calories" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="protein">タンパク質 (g)</label>
+                            <input type="number" name="protein" id="protein" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="fat">脂質 (g)</label>
+                            <input type="number" name="fat" id="fat" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="carbohydrates">炭水化物 (g)</label>
+                            <input type="number" name="carbohydrates" id="carbohydrates" step="0.1" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">追加</button>
+                </form>
+            </section>
+
+            <!-- 食品一覧 -->
+            <section class="foods-list">
+                <div class="list-header">
+                    <h3>食品一覧 (<span th:text="${foods.size()}">0</span>件)</h3>
+                    <form class="search-form" method="get" action="/foods">
+                        <input type="text" name="keyword" th:value="${keyword}" placeholder="食品名で検索...">
+                        <button type="submit" class="btn btn-secondary">検索</button>
+                    </form>
+                </div>
+                <table th:if="${!foods.isEmpty()}">
+                    <thead>
+                        <tr>
+                            <th>食品名</th>
+                            <th>タイプ</th>
+                            <th>グラム</th>
+                            <th>カロリー</th>
+                            <th>P</th>
+                            <th>F</th>
+                            <th>C</th>
+                            <th>公開</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="food : ${foods}">
+                            <td th:text="${food.foodName}">食品名</td>
+                            <td th:text="${food.mealType == 'breakfast' ? '朝食' : (food.mealType == 'lunch' ? '昼食' : (food.mealType == 'dinner' ? '夕食' : '間食'))}">タイプ</td>
+                            <td th:text="${food.portionGrams}">0</td>
+                            <td th:text="${food.calories}">0</td>
+                            <td th:text="${food.protein}">0</td>
+                            <td th:text="${food.fat}">0</td>
+                            <td th:text="${food.carbohydrates}">0</td>
+                            <td th:text="${food.isPublic ? '公開' : '非公開'}">公開</td>
+                            <td>
+                                <form th:if="${!food.isPublic}" th:action="@{/foods/{id}/delete(id=${food.foodId})}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('削除しますか？')">削除</button>
+                                </form>
+                                <span th:if="${food.isPublic}" class="text-muted">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p th:if="${foods.isEmpty()}" class="empty">食品が見つかりません</p>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 栄養管理アプリ</p>
+        </footer>
+    </div>
+
+    <script>
+        async function logout() {
+            if (!confirm('ログアウトしますか？')) return;
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    alert('ログアウトに失敗しました');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('ログアウトに失敗しました');
+            }
+        }
+    </script>
+</body>
+</html>

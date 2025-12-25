@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ダッシュボード - 栄養管理アプリ</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>栄養管理アプリ</h1>
+            <nav>
+                <a href="/">ホーム</a>
+                <a href="/dashboard" class="active">ダッシュボード</a>
+                <a href="/records">記録</a>
+                <a href="/foods">食品マスタ</a>
+                <a href="/meal-sets">食事セット</a>
+                <a href="/settings">設定</a>
+                <a href="#" onclick="logout(); return false;" class="logout-link">ログアウト</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="page-header">
+                <h2>ダッシュボード</h2>
+                <form class="date-selector" method="get" action="/dashboard">
+                    <input type="date" name="date" th:value="${selectedDate}" onchange="this.form.submit()">
+                </form>
+            </section>
+
+            <section class="summary-cards">
+                <div class="card calories">
+                    <h3>カロリー</h3>
+                    <p class="value"><span th:text="${summary.totalCalories}">0</span> / <span th:text="${user.targetCalories}">2000</span> kcal</p>
+                    <div class="progress-bar">
+                        <div class="progress" th:style="'width:' + ${summary.totalCalories * 100 / user.targetCalories} + '%'"></div>
+                    </div>
+                </div>
+                <div class="card protein">
+                    <h3>タンパク質</h3>
+                    <p class="value"><span th:text="${summary.totalProtein}">0</span> / <span th:text="${user.targetProtein}">60</span> g</p>
+                    <div class="progress-bar">
+                        <div class="progress" th:style="'width:' + ${summary.totalProtein * 100 / user.targetProtein} + '%'"></div>
+                    </div>
+                </div>
+                <div class="card fat">
+                    <h3>脂質</h3>
+                    <p class="value"><span th:text="${summary.totalFat}">0</span> / <span th:text="${user.targetFat}">65</span> g</p>
+                    <div class="progress-bar">
+                        <div class="progress" th:style="'width:' + ${summary.totalFat * 100 / user.targetFat} + '%'"></div>
+                    </div>
+                </div>
+                <div class="card carbs">
+                    <h3>炭水化物</h3>
+                    <p class="value"><span th:text="${summary.totalCarbs}">0</span> / <span th:text="${user.targetCarbs}">250</span> g</p>
+                    <div class="progress-bar">
+                        <div class="progress" th:style="'width:' + ${summary.totalCarbs * 100 / user.targetCarbs} + '%'"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="meals-section">
+                <h3>食事別の記録</h3>
+                <div class="meals-grid">
+                    <div class="meal-card" th:each="meal : ${summary.meals}">
+                        <h4 th:text="${meal.key == 'breakfast' ? '朝食' : (meal.key == 'lunch' ? '昼食' : (meal.key == 'dinner' ? '夕食' : '間食'))}">食事</h4>
+                        <ul th:if="${!meal.value.isEmpty()}">
+                            <li th:each="record : ${meal.value}">
+                                <span th:text="${record.foodName}">食品名</span>
+                                <span class="calories" th:text="${record.calories} + ' kcal'">0 kcal</span>
+                            </li>
+                        </ul>
+                        <p th:if="${meal.value.isEmpty()}" class="empty">記録なし</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="weekly-section">
+                <h3>週間推移</h3>
+                <table class="weekly-table">
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>カロリー</th>
+                            <th>タンパク質</th>
+                            <th>脂質</th>
+                            <th>炭水化物</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="day : ${weeklyStats}">
+                            <td th:text="${day.date}">日付</td>
+                            <td th:text="${day.calories} + ' kcal'">0 kcal</td>
+                            <td th:text="${day.protein} + ' g'">0 g</td>
+                            <td th:text="${day.fat} + ' g'">0 g</td>
+                            <td th:text="${day.carbs} + ' g'">0 g</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 栄養管理アプリ</p>
+        </footer>
+    </div>
+
+    <script>
+        async function logout() {
+            if (!confirm('ログアウトしますか？')) return;
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    alert('ログアウトに失敗しました');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('ログアウトに失敗しました');
+            }
+        }
+    </script>
+</body>
+</html>

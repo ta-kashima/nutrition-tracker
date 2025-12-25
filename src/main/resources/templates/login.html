@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - 栄養管理アプリ</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .auth-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .auth-form .form-group {
+            margin-bottom: 20px;
+        }
+        .auth-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .auth-form input[type="email"],
+        .auth-form input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .auth-form input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .auth-btn:hover {
+            background: #45a049;
+        }
+        .auth-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .auth-btn.dev-btn {
+            background: #ff9800;
+        }
+        .auth-btn.dev-btn:hover {
+            background: #f57c00;
+        }
+        .auth-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .auth-links a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+        }
+        .dev-notice {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h1 class="auth-title">栄養管理アプリ</h1>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <!-- 開発モード表示 -->
+        <div th:if="${!firebaseEnabled}" class="dev-notice">
+            開発モード: Firebase認証は無効です
+        </div>
+
+        <form id="loginForm" class="auth-form" onsubmit="return handleLogin(event)">
+            <div class="form-group">
+                <label for="email">メールアドレス</label>
+                <input type="email" id="email" name="email" required placeholder="example@mail.com">
+            </div>
+
+            <div class="form-group" th:if="${firebaseEnabled}">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" required placeholder="パスワード">
+            </div>
+
+            <div class="loading" id="loading">ログイン中...</div>
+
+            <button type="submit" class="auth-btn" id="loginBtn">ログイン</button>
+        </form>
+
+        <!-- 開発モード用ボタン -->
+        <div th:if="${!firebaseEnabled}">
+            <button type="button" class="auth-btn dev-btn" onclick="handleDevLogin()">
+                開発モードでログイン
+            </button>
+        </div>
+
+        <div class="auth-links" th:if="${firebaseEnabled}">
+            <p><a th:href="@{/register}">アカウントを作成</a></p>
+            <p><a th:href="@{/reset-password}">パスワードをお忘れですか？</a></p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <th:block th:if="${firebaseEnabled}">
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+        <script th:src="@{/js/firebase-config.js}"></script>
+    </th:block>
+
+    <script th:inline="javascript">
+        const firebaseEnabled = /*[[${firebaseEnabled}]]*/ true;
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function setLoading(loading) {
+            document.getElementById('loading').style.display = loading ? 'block' : 'none';
+            document.getElementById('loginBtn').disabled = loading;
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            if (!firebaseEnabled) {
+                handleDevLogin();
+                return false;
+            }
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            setLoading(true);
+            document.getElementById('errorMessage').style.display = 'none';
+
+            try {
+                // Firebase認証
+                const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                const idToken = await userCredential.user.getIdToken();
+
+                // サーバーにトークンを送信
+                const response = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ idToken: idToken })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('ログイン成功！リダイレクト中...');
+                    window.location.href = '/';
+                } else {
+                    showError(result.error || 'ログインに失敗しました');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                let message = 'ログインに失敗しました';
+                if (error.code === 'auth/user-not-found') {
+                    message = 'ユーザーが見つかりません';
+                } else if (error.code === 'auth/wrong-password') {
+                    message = 'パスワードが正しくありません';
+                } else if (error.code === 'auth/invalid-email') {
+                    message = 'メールアドレスの形式が正しくありません';
+                } else if (error.code === 'auth/too-many-requests') {
+                    message = 'ログイン試行回数が多すぎます。しばらくお待ちください';
+                }
+                showError(message);
+            } finally {
+                setLoading(false);
+            }
+
+            return false;
+        }
+
+        async function handleDevLogin() {
+            const email = document.getElementById('email').value || 'dev@example.com';
+
+            setLoading(true);
+            document.getElementById('errorMessage').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/dev-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ email: email })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('ログイン成功！リダイレクト中...');
+                    window.location.href = '/';
+                } else {
+                    showError(result.error || 'ログインに失敗しました');
+                }
+            } catch (error) {
+                console.error('Dev login error:', error);
+                showError('ログインに失敗しました');
+            } finally {
+                setLoading(false);
+            }
+        }
+    </script>
+</body>
+</html>

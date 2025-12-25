@@ -1,0 +1,67 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Data ###
+data/
+
+### Firebase ###
+firebase-service-account.json
+*-firebase-adminsdk-*.json
+firebase-credentials.json
+src/main/resources/static/js/firebase-config.js
+
+### Environment files ###
+.env
+.env.local
+.env.production
+
+### Local production config (contains credentials) ###
+application-local-prod.properties
+
+### Local scripts (contain machine-specific paths and credentials) ###
+psql-connect.bat
+setup-local-prod.bat
+run-local-prod.bat
+
+### Internal documents (not for public repository) ###
+create_design_doc.py
+実行手順書.md
+引き継ぎ資料.md
+本番環境デプロイ手順書.md
+栄養管理アプリ_設計書.xlsx
+設計書.md

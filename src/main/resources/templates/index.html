@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>栄養管理アプリ</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>栄養管理アプリ</h1>
+            <nav>
+                <a href="/" class="active">ホーム</a>
+                <a href="/dashboard">ダッシュボード</a>
+                <a href="/records">記録</a>
+                <a href="/foods">食品マスタ</a>
+                <a href="/meal-sets">食事セット</a>
+                <a href="/settings">設定</a>
+                <a href="#" onclick="logout(); return false;" class="logout-link">ログアウト</a>
+            </nav>
+        </header>
+
+        <main>
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+            <section class="welcome">
+                <h2>今日の栄養サマリー</h2>
+                <p class="date" th:text="${today}"></p>
+            </section>
+
+            <section class="summary-cards">
+                <div class="card calories">
+                    <h3>カロリー</h3>
+                    <p class="value"><span th:text="${summary.totalCalories}">0</span> kcal</p>
+                    <p class="target">目標: <span th:text="${user.targetCalories}">2000</span> kcal</p>
+                </div>
+                <div class="card protein">
+                    <h3>タンパク質</h3>
+                    <p class="value"><span th:text="${summary.totalProtein}">0</span> g</p>
+                    <p class="target">目標: <span th:text="${user.targetProtein}">60</span> g</p>
+                </div>
+                <div class="card fat">
+                    <h3>脂質</h3>
+                    <p class="value"><span th:text="${summary.totalFat}">0</span> g</p>
+                    <p class="target">目標: <span th:text="${user.targetFat}">65</span> g</p>
+                </div>
+                <div class="card carbs">
+                    <h3>炭水化物</h3>
+                    <p class="value"><span th:text="${summary.totalCarbs}">0</span> g</p>
+                    <p class="target">目標: <span th:text="${user.targetCarbs}">250</span> g</p>
+                </div>
+            </section>
+
+            <section class="quick-actions">
+                <h3>クイックアクション</h3>
+                <div class="action-buttons">
+                    <a th:href="@{/records(date=${today})}" class="btn btn-primary">食事を記録する</a>
+                    <a href="/dashboard" class="btn btn-secondary">詳細を見る</a>
+                </div>
+            </section>
+
+            <section class="record-count">
+                <p>今日の記録数: <strong th:text="${summary.recordCount}">0</strong> 件</p>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 栄養管理アプリ</p>
+        </footer>
+    </div>
+
+    <script>
+        async function logout() {
+            if (!confirm('ログアウトしますか？')) return;
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    alert('ログアウトに失敗しました');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('ログアウトに失敗しました');
+            }
+        }
+    </script>
+</body>
+</html>
