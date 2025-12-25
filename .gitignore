@@ -43,7 +43,7 @@ data/
 firebase-service-account.json
 *-firebase-adminsdk-*.json
 firebase-credentials.json
-src/main/resources/static/js/firebase-config.js
+# firebase-config.js は公開しても安全（セキュリティはFirebaseルールで管理）
 
 ### Environment files ###
 .env
