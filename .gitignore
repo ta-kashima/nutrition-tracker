@@ -59,7 +59,7 @@ setup-local-prod.bat
 run-local-prod.bat
 
 ### Internal documents (not for public repository) ###
-create_design_doc.py
+*.py
 実行手順書.md
 引き継ぎ資料.md
 本番環境デプロイ手順書.md

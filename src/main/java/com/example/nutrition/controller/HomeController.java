@@ -189,6 +189,20 @@ public class HomeController {
     }
 
     /**
+     * 食品修正処理
+     */
+    @PostMapping("/foods/{id}/edit")
+    public String editFood(@PathVariable Long id, @ModelAttribute FoodMaster food) {
+        User user = userService.getCurrentUser();
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        foodMasterService.updateFood(id, food, user.getUserId());
+        return "redirect:/foods";
+    }
+
+    /**
      * 食品削除処理
      */
     @PostMapping("/foods/{id}/delete")

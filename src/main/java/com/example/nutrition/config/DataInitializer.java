@@ -24,8 +24,17 @@ public class DataInitializer implements CommandLineRunner {
     private final FoodMasterRepository foodMasterRepository;
 
     @Override
+    @Transactional
     public void run(String... args) {
-        createInitialFoods();
+        // 初期食品データの投入を無効化（ユーザー登録食品のみ使用）
+        // createInitialFoods();
+
+        // 既存の公開食品（デフォルト食品）を削除
+        long publicCount = foodMasterRepository.countByIsPublicTrue();
+        if (publicCount > 0) {
+            foodMasterRepository.deleteByIsPublicTrue();
+            log.info("{}件の公開食品データを削除しました", publicCount);
+        }
     }
 
     @Transactional
